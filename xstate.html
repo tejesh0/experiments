@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>data_apps</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="ui/bootstraptheme.css">
+  <link rel="stylesheet" href="ui/font-awesome/css/font-awesome.min.css">
+  <style>
+    .btn-outline-success:hover {
+      color: #28a745;
+      background-color: #ffffff00;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- <div class="container-fluid">
+    <h6>@tejesh95</h6>
+  </div> -->
+  <div class="container d-flex flex-column w-25">
+    <div id="conditional" class="mb-3">
+      <button type="button" class="btn btn-outline-dark my-2 mr-3 ripple active" name="prev" value="prev"
+        disabled>Prev</button>
+      <button type="button" class="btn btn-outline-dark my-2 ripple active" name="plan" value="plan"
+        disabled>Plan</button>
+    </div>
+    <div id="filters" class="w-15 justify-content-between d-flex flex-wrap">
+      <button type="button" class="btn btn-outline-success active ripple mb-4 col-5">China</button>
+      <button type="button" class="btn btn-outline-success active ripple mb-4 col-5">Nigeria</button>
+      <button type="button" class="btn btn-outline-success active ripple mb-4 col-5">India</button>
+      <button type="button" class="btn btn-outline-success active ripple mb-4 col-5">Brazil</button>
+      <button type="button" class="btn btn-outline-success active ripple mb-4 col-5">Serbia</button>
+      <button type="button" class="btn btn-outline-success active ripple mb-4 col-5">Peru</button>
+    </div>
+  </div>
+
+</body>
+<script src="ui/jquery/dist/jquery.min.js"></script>
+<script src="ui/popper.js/dist/umd/popper.min.js"></script>
+<script src="ui/bootstrap/dist/js/bootstrap.min.js"></script>
+<script src="ui/d3/build/d3.min.js"></script>
+<script src="ui/lodash/lodash.min.js"></script>
+<script src="ui/g1/dist/g1.min.js"></script>
+<script src="node_modules/xstate/dist/xstate.js"></script>
+<script>
+  const filterMachine = XState.Machine(
+    {
+      id: 'click',
+      initial: 'All Regions Selected',
+      states: {
+        'All Regions Selected': {
+          on: {
+            CLICK: [
+              {
+                target: 'One Region Selected',
+                actions: ['deselect_other_than_clicked_button']
+              }
+            ]
+          }
+        },
+        'More than One Region Selected': {
+          on: {
+            CLICK: [
+              {
+                target: 'More than One Region Selected',
+                actions: ['toggle_button_state']
+              }
+            ]
+          },
+          onExit: [
+            {
+              target: "All Regions Selected",
+              cond: "is_all_buttons_selected"
+            },
+            {
+              target: "One Region Selected",
+              cond: "is_one_button_selected"
+            }
+          ]
+        },
+        'One Region Selected': {
+          on: {
+            CLICK: [
+              {
+                target: 'All Regions Selected',
+                cond: 'is_one_button_selected',
+                actions: ['select_all']
+              },
+              {
+                target: 'More than One Region Selected',
+                actions: ['toggle_button_state']
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      actions: {
+        deselect_other_than_clicked_button: function (context, event) {
+          document.querySelectorAll('#filters button').forEach(function (node) {
+            if (node !== event.value.target) {
+              node.classList.remove('active')
+            }
+          })
+        },
+        select_all: function () {
+          document.querySelectorAll('#filters button').forEach(function (node) {
+            node.classList.add('active')
+          })
+        },
+        toggle_button_state: function (context, event) {
+          event.value.target.classList.toggle('active')
+        }
+      },
+      guards: {
+        is_all_buttons_selected: function (context, event) {
+          return document.querySelectorAll('#filters button').length ===
+            document.querySelectorAll('#filters button.active').length
+        },
+        is_one_button_selected: function (ctx, event) {
+          return document.querySelectorAll('#filters button.active').length === 1 &&
+            document.querySelector('#filters button.active') == event.value.target
+        }
+      }
+    }
+  )
+
+  var filterService = XState.interpret(filterMachine)
+    .onTransition((state) => console.log(state))
+    .start()
+
+  document.querySelector('#filters')
+    .addEventListener('click', function (event) {
+      if (event.target.tagName == 'BUTTON') {
+        filterService.send({ type: 'CLICK', value: event })
+      }
+    })
+
+</script>
+
+</html>

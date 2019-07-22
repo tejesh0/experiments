@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>data_apps</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="ui/bootstraptheme.css">
+  <link rel="stylesheet" href="ui/font-awesome/css/font-awesome.min.css">
+  <style>
+    .btn-outline-success:hover {
+      color: #28a745;
+      background-color: #ffffff00;
+    }
+
+    .btn-outline-dark:hover {
+      color: #111;
+      background-color: #ffffff00;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 
+  <div class="container-fluid">
+    <h6>@tejesh95</h6>
+  </div> -->
+  <div class="container d-flex flex-column w-25 my-5">
+    <div id="prev_plan_filters" class="mb-3">
+      <button type="button" class="btn btn-outline-dark my-2 mr-3  active" name="prev" value="prev"
+        disabled>Prev</button>
+      <button type="button" class="btn btn-outline-dark my-2  active" name="plan" value="plan" disabled>Plan</button>
+    </div>
+    <div id="region_filters" class="w-15 justify-content-between d-flex flex-wrap">
+      <button type="button" class="btn btn-outline-success active  mb-4 col-5">China</button>
+      <button type="button" class="btn btn-outline-success active  mb-4 col-5">Nigeria</button>
+      <button type="button" class="btn btn-outline-success active  mb-4 col-5">India</button>
+      <button type="button" class="btn btn-outline-success active  mb-4 col-5">Brazil</button>
+      <button type="button" class="btn btn-outline-success active  mb-4 col-5">Serbia</button>
+      <button type="button" class="btn btn-outline-success active  mb-4 col-5">Peru</button>
+    </div>
+  </div>
+
+</body>
+<script src="ui/jquery/dist/jquery.min.js"></script>
+<script src="ui/popper.js/dist/umd/popper.min.js"></script>
+<script src="ui/bootstrap/dist/js/bootstrap.min.js"></script>
+<script src="ui/d3/build/d3.min.js"></script>
+<script src="ui/lodash/lodash.min.js"></script>
+<script src="ui/g1/dist/g1.min.js"></script>
+<script src="node_modules/xstate/dist/xstate.js"></script>
+<script>
+  const filterMachine = XState.Machine(
+    {
+      id: 'filter_machine',
+      type: 'parallel',
+      states: {
+        prev_planned_filters: {
+          initial: 'DISABLED',
+          states: {
+            DISABLED: {
+              onEntry: 'disable_prev_planned_filters',
+              on: {
+                CLICK: {
+                  cond: (xs, e, cs) => {
+                    return cs.state.value.region_filters == 'One_Last_Active_Button'
+                  },
+                  target: 'ENABLED'
+                }
+              }
+            },
+            ENABLED: {
+              onEntry: 'enable_prev_planned_filters',
+              on: {
+                CLICK_: {
+                  target: 'ENABLED',
+                  actions: ['toggle_button_state']
+                },
+                CLICK: {
+                  target: 'DISABLED',
+                  cond: (xs, e, cs) => {
+                    return cs.state.value.region_filters != 'One_Last_Active_Button'
+                  }
+                }
+              }
+            }
+          }
+        },
+        region_filters: {
+          id: 'region_filters',
+          initial: 'Default',
+          on: {
+            CLICK: [
+              { cond: 'all_buttons_active', target: 'region_filters.One_Last_Active_Button', actions: ['activate_clicked_only_button'] },
+              { cond: 'last_but_one_button_selected', target: 'region_filters.All_Active_Buttons' },
+              { cond: 'last_but_one_button_deselected', target: 'region_filters.One_Last_Active_Button' },
+              { target: 'region_filters.Default' }
+            ]
+          },
+          states:
+          {
+            Default: {
+              onEntry: 'toggle_button_state'
+            },
+            All_Active_Buttons: {
+              onEntry: 'select_all'
+            },
+            One_Last_Active_Button: {
+              on: {
+                CLICK: [
+                  {
+                    cond: 'active_button_clicked',
+                    target: 'All_Active_Buttons'
+                  },
+                  {
+                    target: 'Default'
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+
+    },
+    {
+      actions: {
+        activate_clicked_only_button: function (context, event) {
+          document.querySelectorAll('#region_filters button').forEach(function (node) {
+            if (node !== event.click.target) {
+              node.classList.remove('active')
+            }
+          })
+        },
+        select_all: function () {
+          document.querySelectorAll('#region_filters button').forEach(function (node) {
+            node.classList.add('active')
+          })
+        },
+        toggle_button_state: function (context, event) {
+          if (event.click) event.click.target.classList.toggle('active')
+        },
+        disable_prev_planned_filters: function () {
+          $('#prev_plan_filters button').prop('disabled', true)
+        },
+        enable_prev_planned_filters: function () {
+          $('#prev_plan_filters button').removeAttr('disabled')
+        }
+      },
+      guards: {
+        all_buttons_active: function () {
+          return document.querySelectorAll('#region_filters button').length ===
+            document.querySelectorAll('#region_filters button.active').length
+        },
+        active_button_clicked: function (context, event) {
+          return event.click.target.classList.contains('active')
+        },
+        last_but_one_button_selected: function (context, event) {
+          return !event.click.target.classList.contains('active') &&
+            document.querySelectorAll('#region_filters button.active').length == 5
+        },
+        last_but_one_button_deselected: function (context, event) {
+          return event.click.target.classList.contains('active') &&
+            document.querySelectorAll('#region_filters button.active') == 2
+        }
+      }
+    }
+  )
+
+  var filterService = XState.interpret(filterMachine)
+    .onTransition((state) => console.log(state.value))
+    .start()
+
+  document.querySelector('#region_filters')
+    .addEventListener('click', function (event) {
+      if (event.target.tagName == 'BUTTON') {
+        filterService.send({ type: 'CLICK', click: event })
+      }
+    })
+
+  document.querySelector('#prev_plan_filters')
+    .addEventListener('click', function (event) {
+      if (event.target.tagName == 'BUTTON') {
+        filterService.send({ type: 'CLICK_', click: event })
+      }
+    })
+
+    // switch (STATE_) {
+    //   case 'all_buttons_active':
+    //     if (input == 'CLICK')
+    //       activate_clicked_button_only()
+    //     break;
+    //   case 'one_button_active':
+    //     if (input == 'CLICK')
+    //       // Conditional Guard
+    //       if (event.target == get_active_button())
+    //         activate_all_buttons()
+    //     break;
+    //   default:
+    //     if (input == 'CLICK')
+    //       toggle_button()
+    // }
+
+</script>
+
+</html>

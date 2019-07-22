@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>data_apps</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="ui/bootstraptheme.css">
+  <link rel="stylesheet" href="ui/font-awesome/css/font-awesome.min.css">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="."><i class="fa fa-home"></i></a>
+      </div>
+      <ul class="nav navbar-nav">
+        <li class="navbar-brand h3">state machines for state management</li>
+      </ul>
+      <ul class="nav navbar-nav">
+        <li><a href="login" class="username" title="Log in again" data-placement="bottom"></a></li>
+        <li><a href="logout" title="Log out" data-placement="bottom"><span class="fa fa-sign-out"></span></a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container-fluid">
+    <h4>@tejesh95</h4>
+  </div>
+  <div class="container d-flex flex-column w-25">
+    <div id="conditional" class="mb-3">
+      <button type="button" class="btn btn-outline-dark my-2 mr-3 ripple active" name="prev" value="prev" disabled>Prev</button>
+      <button type="button" class="btn btn-outline-dark my-2 ripple active" name="plan" value="plan" disabled>Plan</button>
+    </div>
+    <div id ="filters" class="w-15 justify-content-between d-flex flex-wrap">
+        <button type="button" class="btn btn-outline-success active ripple mb-4 col-5">China</button>
+        <button type="button" class="btn btn-outline-success active ripple mb-4 col-5">Nigeria</button>
+        <button type="button" class="btn btn-outline-success active ripple mb-4 col-5">India</button>
+        <button type="button" class="btn btn-outline-success active ripple mb-4 col-5">Brazil</button>
+        <button type="button" class="btn btn-outline-success active ripple mb-4 col-5">Serbia</button>
+        <button type="button" class="btn btn-outline-success active ripple mb-4 col-5">Peru</button>
+    </div>
+  </div>
+</body>
+<script src="ui/jquery/dist/jquery.min.js"></script>
+<script src="ui/popper.js/dist/umd/popper.min.js"></script>
+<script src="ui/bootstrap/dist/js/bootstrap.min.js"></script>
+<script src="ui/d3/build/d3.min.js"></script>
+<script src="ui/lodash/lodash.min.js"></script>
+<script src="ui/moment/min/moment-with-locales.min.js"></script>
+<script src="ui/noty/lib/noty.min.js"></script>
+<script src="ui/daterangepicker/daterangepicker.js"></script>
+<script src="ui/leaflet/dist/leaflet.js"></script>
+<script src="ui/topojson/dist/topojson.min.js"></script>
+<script src="ui/g1/dist/g1.min.js"></script>
+<script>
+  // const states = [
+  //   'All Regions Selected',
+  //   'One Region Selected',
+  //   'More than One Region Selected'
+  // ]
+
+  // if (all_buttons_active) {
+  //   activate_clicked_button_only()
+  // } else if (clicked_button_is_the_only_active_button) {
+  //   activate_all_buttons()
+  // } else {
+  //   toggle_button()
+  // }
+
+  // document.querySelector('#filters')
+  //   .addEventListener('click', function (event) {
+  //     if (event.target.tagName == 'BUTTON') {
+  //       if (document.querySelectorAll('#filters button.active').length === 6) {
+  //         document.querySelectorAll('#filters button').forEach(function (node) {
+  //           if (node !== event.target) {
+  //             node.classList.remove('active')
+  //           }
+  //         })
+  //       }
+  //       else if (document.querySelectorAll('#filters button.active').length === 1 &&
+  //         document.querySelector('#filters button.active') == event.target) {
+  //         document.querySelectorAll('#filters button').forEach(function (node) {
+  //           node.classList.add('active')
+  //         })
+  //       } else {
+  //         event.target.classList.toggle('active')
+  //       }
+  //     }
+  //   })
+
+
+
+  const machine = {
+    currentState: 'All Regions Selected',
+    states: {
+      'All Regions Selected': {
+        click: function () {
+          return 'One Region Selected'
+        }
+      },
+      'One Region Selected': {
+        click: function () {
+          if (document.querySelectorAll('#filters button').length ===
+            document.querySelectorAll('#filters button.active').length) {
+            return 'All Regions Selected'
+          }
+          return 'More than One Region Selected'
+        }
+      },
+      'More than One Region Selected': {
+        click: function () {
+          if (document.querySelectorAll('#filters button').length ===
+            document.querySelectorAll('#filters button.active').length) {
+            return 'All Regions Selected'
+          } else if (document.querySelectorAll('#filters button.active').length === 1) {
+            return 'One Region Selected'
+          }
+          return 'More than One Region Selected'
+        }
+      }
+    }
+  }
+
+  // DOM writes happen here
+  const actions = {
+    'All Regions Selected': {
+      click: function (event) {
+        document.querySelectorAll('#filters button').forEach(function (node) {
+          if (node !== event.target) {
+            node.classList.remove('active')
+          }
+        })
+      }
+    },
+    'More than One Region Selected': {
+      click: function (event) {
+        event.target.classList.toggle('active')
+      }
+    },
+    'One Region Selected': {
+      click: function (event) {
+        if (document.querySelector('#filters button.active') != event.target) {
+          event.target.classList.add('active')
+        } else {
+          document.querySelectorAll('#filters button').forEach(function (node) {
+            node.classList.add('active')
+          })
+        }
+      }
+    }
+  }
+
+  const stateEvents = {
+    'All Regions Selected': function () {
+      $('#conditional button').prop("disabled", true)
+    },
+    'One Region Selected': function () {
+      $('#conditional button').prop("disabled", false)
+    },
+    'More than One Region Selected': function () {
+      $('#conditional button').prop("disabled", true)
+    }
+  }
+
+
+  const input = function (event_name, args) {
+    const state = machine.currentState
+
+    // Action dispatcher
+    actions[machine.currentState][event_name](args)
+    // State Transition(er)
+    machine.currentState = machine.states[state][event_name](args)
+    // On State Event Triggers
+    stateEvents[machine.currentState]()
+    // Time Travel Logger
+    console.log(`${state} + ${event_name} --> ${machine.currentState}`)
+  }
+
+  // /**
+  //  * all IF conditions must be in "Conditions" block of rule Engine
+  //  * 
+  //  */
+
+
+  // ************ DOM CODE ************//
+  document.querySelector('#filters')
+    .addEventListener('click', function (event) {
+      if (event.target.tagName == 'BUTTON') {
+        input('click', event)
+      }
+    })
+
+</script>
+
+</html>

@@ -1,0 +1,161 @@
+<html>
+
+<body>
+    <link rel="stylesheet" href="ui/bootstraptheme.css">
+    <link rel="stylesheet" href="ui/font-awesome/css/font-awesome.min.css">
+    <script src="ui/jquery/dist/jquery.min.js"></script>
+    <script src="ui/popper.js/dist/umd/popper.min.js"></script>
+    <script src="ui/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="ui/d3/build/d3.min.js"></script>
+    <script src="ui/lodash/lodash.min.js"></script>
+    <script src="ui/moment/min/moment-with-locales.min.js"></script>
+    <script src="ui/noty/lib/noty.min.js"></script>
+    <script src="ui/daterangepicker/daterangepicker.js"></script>
+    <script src="ui/leaflet/dist/leaflet.js"></script>
+    <script src="ui/topojson/dist/topojson.min.js"></script>
+    <script src="ui/g1/dist/g1.min.js"></script>
+      
+  <div id="representation">
+    <blockquote>Problem is (follow me closely here, the science is pretty complicated), if I cut a hole in the Hab, the
+      air won't stay inside anymore.</blockquote><br>
+    - Andy Weir, The Martian
+  </div>
+  <script>
+
+    var COUNTER_MAX = 10;
+
+    var model = {
+      counter: COUNTER_MAX
+    }
+
+    var machine = {
+      currentState: 'nothing',
+      states: {
+        'nothing': {
+          'init': function () {
+            return 'start'
+          }
+        },
+        'start': {
+          'clicked': function () {
+
+            return 'counting'
+          }
+        },
+        'counting': {
+          'decrement_counter': function () {
+            return model.counter == 0 ? 'launched' : 'counting'
+          },
+          'clicked': function () {
+            // show "aborted at counter: " + counter
+            return 'aborted'
+          }
+        }
+      }
+    };
+
+    var view = {}
+    view.ready = function (model) {
+      return (
+        `<p>Counter: ${model.counter} </p>
+          <input type="submit" value="Start">`
+      );
+    }
+
+    view.counting = function (model) {
+      return (
+        `<p>Counter: ${model.counter} </p>
+          <input type="submit" value="Abort">`
+      );
+    }
+
+    view.aborted = function (model) {
+      return (
+        "<p>Aborted at Counter:" + model.counter + "</p>\n"
+      );
+    }
+
+    view.launched = function (model) {
+      return (
+        "<p>Launched</p>"
+      )
+    }
+
+    const actions = {
+      dispatch: function (props) {
+        var self = this
+        props.reduce((accumulator, current) =>
+          (accumulator && accumulator[current]) ? accumulator[current] : (new Error('wrong path'))
+        , self)()
+      },
+      'nothing': {
+        'init': function () {
+          // replace quote with counter value and its button
+          $('#representation').html(view.ready(model))
+        }
+      },
+      'start': {
+        'clicked': function () {
+          $('#representation').html(view.counting(model))
+        }
+      },
+      'counting': {
+        'decrement_counter': function () {
+          if (model.counter == 0) {
+            $('#representation').html(view.launched(model))
+          } else {
+            $('#representation').html(view.counting(model))
+          }
+        },
+        'clicked': function () {
+          // show "aborted at counter: " + counter
+          $('#representation').html(view.aborted(model))
+        }
+      }
+    }
+
+  const stateEvents = {
+    'nothing': function() {
+      return 
+    },
+    'start': function() {
+      return
+    },
+    'counting': function() {
+      setTimeout(function () {
+        model.counter -= 1
+        input('decrement_counter')
+      }, 1000)
+    },
+    'launched': function() {
+      return
+    }
+  }
+
+
+  const input = function (name) {
+    const state = machine.currentState
+
+    // Action dispatcher
+    actions.dispatch([machine.currentState, name])
+    // State Transition(er)
+    machine.currentState = machine.states[state][name]()
+    // State Event Triggers
+    stateEvents[machine.currentState]()
+    // Time Travel Logger
+
+  }
+
+
+// ************ DOM CODE ************//
+$('body')
+  .on('click', 'input', function (ev) {
+    input('clicked')
+  })
+
+input('init')
+
+  </script>
+</body>
+
+</html>
